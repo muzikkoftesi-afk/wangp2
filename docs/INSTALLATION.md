@@ -194,6 +194,7 @@ The `cp311` part of the file name (it appears twice) is the Python version (3.11
 
 For another PyTorch version, compile the fork instead (this takes a while):
 ```
+# run with WanGP's environment activated
 python -m pip install "setuptools<=75.8.2" ninja wheel --force-reinstall
 git clone https://github.com/deepbeepmeep/SageAttention
 cd SageAttention
@@ -214,10 +215,29 @@ pip install https://github.com/woct0rdho/SpargeAttn/releases/download/v0.1.0-win
 ```
 
 #### Linux Install Sparge Attention
-Activate your WanGP Python environment before running these commands; SpargeAttn's build also invokes `python` from `PATH` to generate its kernels.
+Activate your WanGP Python environment before running these commands; SpargeAttn's build compiles against that environment's PyTorch. The unpatched setup.py also invokes `python` from `PATH` to generate its kernels.
+
+CUDA 13 builds can fail with `error: identifier "__assert_fail" is undefined` in `cuda_fp8.hpp`, `cuda_fp6.hpp`, or `cuda_fp4.hpp`. Run the helper script, which clones the repository, adds `-DNDEBUG` to the nvcc flags, runs the kernel generation with the build interpreter, and installs the package:
+```
+scripts/install-spargeattn.sh
+```
+
+Manual equivalent:
 ```
 python -m pip install ninja wheel packaging
-python -m pip install --no-build-isolation git+https://github.com/woct0rdho/SpargeAttn.git
+git clone https://github.com/woct0rdho/SpargeAttn
+cd SpargeAttn
+# add "-DNDEBUG" to NVCC_FLAGS_COMMON
+# replace os.system(f"python {py_file}") with
+# subprocess.check_call([sys.executable, str(py_file)]) and add import sys
+python -m pip install --no-build-isolation .
+```
+
+If you only need the kernels for one GPU family, limit the build:
+```
+TORCH_CUDA_ARCH_LIST="12.0" scripts/install-spargeattn.sh   # RTX 50xx only
+TORCH_CUDA_ARCH_LIST="8.9" scripts/install-spargeattn.sh    # RTX 40xx only
+TORCH_CUDA_ARCH_LIST="8.6" scripts/install-spargeattn.sh    # RTX 30xx only
 ```
 
 
